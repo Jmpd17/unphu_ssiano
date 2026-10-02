@@ -14,9 +14,7 @@ class UnphuSsianoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF17643D),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF17643D)),
       ),
       home: const HomePage(),
     );
@@ -60,10 +58,7 @@ class HomePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            'UNPHU-MAP',
-                            style: theme.textTheme.titleLarge,
-                          ),
+                          Text('UNPHU-MAP', style: theme.textTheme.titleLarge),
                           const SizedBox(height: 12),
                           const Text(
                             'Tu espacio para encontrar edificios y aulas.',
@@ -94,11 +89,49 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class CampusMapPage extends StatelessWidget {
+class CampusMapPage extends StatefulWidget {
   const CampusMapPage({super.key});
 
   @override
+  State<CampusMapPage> createState() => _CampusMapPageState();
+}
+
+class _CampusMapPageState extends State<CampusMapPage> {
+  static const _demoDestinations = <String>[
+    'Edificio A',
+    'Edificio B',
+    'Biblioteca',
+    'Aula A-101',
+    'Aula B-202',
+  ];
+
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _query = '';
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final query = _query.trim().toLowerCase();
+    final matches = _demoDestinations
+        .where((destination) => destination.toLowerCase().contains(query))
+        .toList();
+    final resultLabel = matches.length == 1
+        ? '1 resultado'
+        : '${matches.length} resultados';
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('UNPHU-MAP'),
@@ -108,19 +141,65 @@ class CampusMapPage extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
         ),
       ),
-      body: const SafeArea(
+      body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               children: [
-                Icon(Icons.location_on_outlined, size: 64),
-                SizedBox(height: 16),
                 Text(
-                  'Aún no hay destinos disponibles',
-                  textAlign: TextAlign.center,
+                  'Destinos de demostración',
+                  style: theme.textTheme.titleMedium,
                 ),
+                const SizedBox(height: 4),
+                const Text('Estos lugares son ficticios.'),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _searchController,
+                  autocorrect: false,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) {
+                    setState(() {
+                      _query = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Buscar edificio o aula',
+                    hintText: 'Ejemplo: biblioteca o A-101',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Limpiar búsqueda',
+                            onPressed: _clearSearch,
+                            icon: const Icon(Icons.close),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Semantics(liveRegion: true, child: Text(resultLabel)),
+                const SizedBox(height: 8),
+                if (matches.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Text(
+                      'No encontramos coincidencias.\n'
+                      'Prueba otro nombre o código.',
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else
+                  for (final destination in matches)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.place_outlined),
+                        title: Text(destination),
+                        subtitle: const Text('Destino de demostración'),
+                      ),
+                    ),
               ],
             ),
           ),
